@@ -7,10 +7,14 @@
 
 module VigraRF
 (
-  RandomForestOptions
+  RandomForest
+, RandomForestOptions
 , defaultRandomForestOptions
+, Label
 , Labels
+, Feature
 , Features
+, Predictions
 , learnRandomForest
 , predictRandomForest  
 ) where
@@ -30,6 +34,7 @@ data RandomForestOptions = RandomForestOptions {
 , training_set_proportions    :: Double
 , sample_with_replacement     :: Bool -- ^ Sample from training population with or without replacement?
 , sample_classes_individually :: Bool -- ^ Take sampels for each class induvidualy?
+, print_progress              :: Bool -- ^ Should the progress be printed ot stdout
 }
 -- | Default options for reandom forest
 defaultRandomForestOptions :: RandomForestOptions
@@ -40,12 +45,15 @@ defaultRandomForestOptions = RandomForestOptions {
 , training_set_size           = 0
 , training_set_proportions    = 1.0
 , sample_with_replacement     = True
-, sample_classes_individually = False}
+, sample_classes_individually = False
+, print_progress              = True}
 
 -- | Label type
-type Labels   = [Word]
+type Label    = Word
+type Labels   = [Label]
 -- | Feature type
-type Features = [[Double]]
+type Feature  = [Double]
+type Features = [Feature]
 -- | Prediction type (output of the random forest)
 --   Its a list of lists of probabilities.
 --   The probability for the n-th class in the m-th sample is 'pred !! m !! n'
@@ -61,7 +69,7 @@ learnRandomForest os fs ls = do
   withForeignPtr featureArray $
     \fa -> withForeignPtr labelArray $
       \la -> withForeignPtr randomForest $
-        \rf -> c_learnRandomForest rf fa la
+        \rf -> c_learnRandomForest rf fa la (if print_progress os then 1 else 0)
   return randomForest
 
 -- | Predict labels using a random forest with the given features
@@ -146,5 +154,5 @@ getNumClasses :: RandomForest -> IO Word
 getNumClasses rf = fromIntegral <$> withForeignPtr rf c_getNumClasses
 
 -- foreign import to learn and predict random forest
-foreign import ccall "randomForestHS.h learnRandomForest" c_learnRandomForest :: Ptr CRandomForest -> Ptr CFeatureArray -> Ptr CLabelArray -> IO CFloat
+foreign import ccall "randomForestHS.h learnRandomForest" c_learnRandomForest :: Ptr CRandomForest -> Ptr CFeatureArray -> Ptr CLabelArray -> CInt -> IO CFloat
 foreign import ccall "randomForestHS.h predictRandomForest" c_predictRandomForest :: Ptr CRandomForest -> Ptr CFeatureArray -> IO (Ptr CPredictionArray)

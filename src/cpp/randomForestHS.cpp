@@ -8,7 +8,6 @@
 
 // Functions to create label and feature arrays
 LabelArray* createLabelArray(unsigned int size) {
-  printf("Creating label array\n");
   return new LabelArray(vigra::MultiArrayShape<2>::type(size,1));
 }
 
@@ -17,7 +16,6 @@ void deleteLabelArray(LabelArray* array) {
 }
 
 FeatureArray* createFeatureArray(unsigned int num_data, unsigned int num_features) {
-  printf("Creating feature array\n");
   return new FeatureArray(vigra::MultiArrayShape<2>::type(num_data, num_features));
 }
 
@@ -44,7 +42,6 @@ double getPredictionArrayValue(PredictionArray* array, unsigned int dataid, unsi
 // sample_with_replacement and sample_classes_individually should be of type bool
 // But there is no CBool in haskell so we use int (CInt)
 RandomForest* createRandomForest(int treeCount, int mtry, int min_split_node_size, int training_set_size, float training_set_proportions, int sample_with_replacement, int sample_classes_individually) {
-  printf("Creating random forest\n");
   vigra::RandomForestOptions options;
   options.sample_with_replacement(sample_with_replacement)
          .tree_count(treeCount)
@@ -58,9 +55,7 @@ RandomForest* createRandomForest(int treeCount, int mtry, int min_split_node_siz
   if (sample_classes_individually)
     options.use_stratification(vigra::RF_EQUAL);
 
-  printf("Options done, calling new\n");
   RandomForest *rf = new RandomForest(options);
-  printf("Returning rf");
   return rf;
 }
 
@@ -68,20 +63,35 @@ void deleteRandomForest(RandomForest* rf) {
   delete rf;
 }
 
+/** Visitor to print progress of learning
+ */
+class ProgressVisitor : public vigra::rf::visitors::VisitorBase {
+public:
+  ProgressVisitor() : VisitorBase() {}
+  template<class RF, class PR, class SM, class ST>
+  void visit_after_tree(RF& rf, PR& pr, SM& sm, ST& st, int index) {
+    printf("%d of %d learned\n", index, rf.options().tree_count_);
+  }
+};
+
 double learnRandomForest(RandomForest* rf
                         ,FeatureArray *trainData
-                        ,LabelArray *trainLabels) {
+                        ,LabelArray *trainLabels
+                        ,int printProgress) {
   using namespace vigra::rf;
-  printf("Learning\n");
   visitors::OOB_Error oob_v;
-  rf->learn(*trainData, *trainLabels, visitors::create_visitor(oob_v));
+  ProgressVisitor prog_v;
+  if (printProgress) {
+    rf->learn(*trainData, *trainLabels, visitors::create_visitor(oob_v, prog_v));
+  } else {
+    rf->learn(*trainData, *trainLabels, visitors::create_visitor(oob_v));
+  }
   return oob_v.oob_breiman;
 }
 
 PredictionArray* predictRandomForest(RandomForest* rf
                          ,FeatureArray* testData) {
   PredictionArray* res = new PredictionArray(vigra::MultiArrayShape<2>::type(testData->shape(0), rf->ext_param_.class_count_));
-  printf("Predicting\n");
   rf->predictProbabilities(*testData, *res);
   return res;
 }

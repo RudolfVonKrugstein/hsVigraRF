@@ -25,7 +25,8 @@ RandomForest* createRandomForest(int treeCount, int mtry, int min_split_node_siz
 void deleteRandomForest(RandomForest* rf);
 double learnRandomForest(RandomForest* rf
                         ,FeatureArray *trainData
-                        ,LabelArray *trainLabels);
+                        ,LabelArray *trainLabels
+                        ,int printProgress);
 PredictionArray* predictRandomForest(RandomForest* rf
                         ,FeatureArray* testData);
 unsigned int getNumClasses(RandomForest* rf);
