@@ -8,7 +8,7 @@
 module VigraRF
 (
   RandomForest
-, RandomForestOptions
+, RandomForestOptions(..)
 , defaultRandomForestOptions
 , Label
 , Labels
