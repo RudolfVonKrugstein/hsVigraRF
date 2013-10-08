@@ -82,7 +82,7 @@ predictRandomForest randomForest fs = do
   predArray   <- newForeignPtr c_deletePredictionArray unsafeArray
   classes     <- getNumClasses randomForest
   let classIds = [0..(classes-1)] :: [Word]
-      dataIds  = [0..(fromIntegral $ length fs)] :: [Word]
+      dataIds  = [0..(fromIntegral $ length fs - 1)] :: [Word]
   mapM (\i -> mapM (\j -> realToFrac <$> getPredictionArrayValue predArray i j) classIds) dataIds
 
 -- From here are the ffi functions
